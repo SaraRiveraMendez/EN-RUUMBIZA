@@ -7,8 +7,8 @@ import numpy as np
 import onnxruntime as ort
 import sounddevice as sd
 
-MODEL_PATH = "model/model.onnx"
-CONFIG_PATH = "model/cardiag_config.json"
+MODEL_PATH = "best_model/model.onnx"
+CONFIG_PATH = "best_model/cardiag_config.json"
 
 SAMPLE_RATE = 16000
 RECORD_SECONDS = 3

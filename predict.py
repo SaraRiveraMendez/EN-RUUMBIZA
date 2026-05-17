@@ -4,8 +4,8 @@ import numpy as np
 import librosa
 import onnxruntime as ort
 
-MODEL_PATH = "model/model.onnx"
-CONFIG_PATH = "model/cardiag_config.json"
+MODEL_PATH = "best_model/model.onnx"
+CONFIG_PATH = "best_model/cardiag_config.json"
 
 # -------------------------
 # Load config
