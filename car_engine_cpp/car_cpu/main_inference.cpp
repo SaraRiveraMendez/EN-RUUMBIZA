@@ -214,16 +214,17 @@ struct OnnxModel {
     auto out = session.Run(Ort::RunOptions{nullptr}, &in_n, &in, 1, &out_n, 1);
     float* scores = out[0].GetTensorMutableData<float>();
 
-    // Softmax para convertir scores a probabilidades
+    // Temperature scaling — T=0.05 calibrado en Python
+    const float T = 0.05f;
+
     float max_score = *std::max_element(scores, scores + N_CLASSES);
     float sum = 0.0f;
     for (int i = 0; i < N_CLASSES; i++) {
-        probs_out[i] = expf(scores[i] - max_score);
+        probs_out[i] = expf((scores[i] - max_score) / T);
         sum += probs_out[i];
     }
     for (int i = 0; i < N_CLASSES; i++) probs_out[i] /= sum;
 
-    // Clase con mayor probabilidad
     int best = 0;
     for (int i = 1; i < N_CLASSES; i++)
         if (probs_out[i] > probs_out[best]) best = i;
