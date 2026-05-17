@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>EN-RUMBIZA — Monitor de Fallas</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #06070c;
+  --s1:       #0d0f1a;
+  --s2:       #141620;
+  --s3:       #1c1f2e;
+  --border:   rgba(255,255,255,.07);
+  --border2:  rgba(255,255,255,.13);
+  --green:    #00ffaa;
+  --green-bg: rgba(0,255,170,.05);
+  --red:      #ff3d5a;
+  --red-bg:   rgba(255,61,90,.1);
+  --orange:   #ff9f00;
+  --yellow:   #ffd000;
+  --soft-orange: #ffb347;
+  --text:     #e8eaf0;
+  --t2:       #7a7f96;
+  --t3:       #3a3f56;
+  --mono:     'IBM Plex Mono', monospace;
+  --disp:     'Rajdhani', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--disp);
+  max-width: 450px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: rgba(6,7,12,.95);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo { font-size: 1.5rem; font-weight: 700; }
+.logo b { color: var(--green); }
+
+.ws-btn {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .32rem .75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border2);
+  background: var(--s2);
+  color: var(--t2);
+  font-family: var(--mono);
+  font-size: .62rem;
+  cursor: pointer;
+  transition: all .2s;
+}
+.ws-btn.on {
+  border-color: rgba(0,255,170,.4);
+  background: var(--green-bg);
+  color: var(--green);
+}
+.ws-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--t3);
+  transition: background .2s;
+}
+.ws-dot.on {
+  background: var(--green);
+  box-shadow: 0 0 8px rgba(0,255,170,.5);
+  animation: blink 2s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .35; }
+}
+
+/* ── Pantalla de conexión ── */
+.conn-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  padding: 2rem;
+  text-align: center;
+}
+.conn-orb {
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  margin-bottom: 1.6rem;
+}
+.conn-title { font-size: 1.3rem; font-weight: 600; margin-bottom: .6rem; }
+.conn-sub   { color: var(--t2); font-size: .9rem; margin-bottom: 1.6rem; line-height: 1.5; }
+.conn-url   { font-family: var(--mono); font-size: .65rem; color: var(--t3); margin-bottom: 1.6rem; }
+
+.btn-ws {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .85rem 2.2rem;
+  background: var(--green-bg);
+  border: 1px solid rgba(0,255,170,.35);
+  border-radius: 12px;
+  color: var(--green);
+  font-family: var(--disp);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s;
+}
+.btn-ws:hover { background: rgba(0,255,170,.1); }
+
+/* ── Dashboard ── */
+#dash { display: none; padding: 1rem; }
+
+.status-text {
+  text-align: center;
+  padding: 1rem;
+  color: var(--t3);
+  font-family: var(--mono);
+  font-size: .7rem;
+}
+
+/* ── Alerta de falla ── */
+.fault-alert {
+  display: none;
+  margin-bottom: 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--red);
+  background: var(--red-bg);
+  padding: 1.3rem;
+  animation: slideIn .3s;
+}
+.fault-alert.visible { display: block; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fa-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .28rem .75rem;
+  border-radius: 999px;
+  background: rgba(255,61,90,.2);
+  border: 1px solid var(--red);
+  font-family: var(--mono);
+  font-size: .63rem;
+  color: var(--red);
+  margin-bottom: .8rem;
+}
+.fa-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: blink 1s infinite;
+}
+.fa-lbl {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  padding: .5rem 0;
+  border-bottom: 1px solid rgba(255,61,90,.2);
+}
+.fa-text { font-size: 1.1rem; font-weight: 600; color: var(--red); }
+.fa-time {
+  font-family: var(--mono);
+  font-size: .6rem;
+  color: var(--t3);
+  margin-top: .8rem;
+  text-align: right;
+}
+
+/* ── Probabilidades con colores NARANJA/AMARILLO ── */
+.probs {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: none;
+}
+.probs.visible { display: block; }
+.probs-title {
+  font-family: var(--mono);
+  font-size: .6rem;
+  color: var(--orange);
+  margin-bottom: .8rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.p-row {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .28rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.p-row:last-child { border-bottom: none; }
+.p-name {
+  font-size: .72rem;
+  color: var(--t2);
+  width: 140px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.p-track {
+  flex: 1;
+  height: 6px;
+  background: var(--s3);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.p-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width .3s;
+  background: linear-gradient(90deg, #ff9f00, #ffd000);
+}
+.p-pct {
+  font-family: var(--mono);
+  font-size: .7rem;
+  font-weight: 600;
+  min-width: 35px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Historial ── */
+.hist { padding: .8rem 0 5rem; }
+.hist-hdr {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: .6rem;
+  font-family: var(--mono);
+  font-size: .6rem;
+  color: var(--t3);
+}
+.hist-list  { display: flex; flex-direction: column; gap: .4rem; }
+.h-item {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  padding: .7rem .9rem;
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  border-left: 3px solid var(--red);
+}
+.h-dot  { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
+.h-lbl  { font-size: .82rem; font-weight: 600; }
+.h-time { font-family: var(--mono); font-size: .58rem; color: var(--t3); }
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--s2);
+  border: 1px solid var(--border2);
+  padding: .6rem 1.1rem;
+  border-radius: 9px;
+  font-size: .76rem;
+  transition: opacity .3s;
+  opacity: 0;
+  z-index: 1000;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="hdr">
+  <div class="logo">EN<b>RUUMBIZA</b></div>
+  <button class="ws-btn" id="wsBtn" onclick="toggleWS()">
+    <div class="ws-dot" id="wsDot"></div>
+    <span id="wsText">Conectar</span>
+  </button>
+</div>
+
+<!-- Pantalla de espera -->
+<div class="conn-screen" id="connScreen">
+  <div class="conn-orb">📡</div>
+  <div class="conn-title">Esperando conexión</div>
+  <div class="conn-sub">Conecta con la computadora que ejecuta el modelo de clasificación</div>
+  <div class="conn-url" id="connUrl"></div>
+  <button class="btn-ws" onclick="toggleWS()">🔗 Conectar</button>
+</div>
+
+<!-- Dashboard -->
+<div id="dash">
+  <div class="status-text" id="statusText">⚡ Monitoreando... Solo se mostrarán fallas</div>
+
+  <div class="fault-alert" id="faultAlert">
+    <div class="fa-badge"><div class="fa-dot"></div> FALLA DETECTADA</div>
+    <div id="faLabels"></div>
+    <div class="fa-time" id="faTime"></div>
+  </div>
+
+  <!-- Tarjeta de probabilidades -->
+  <div class="probs" id="probsCard">
+    <div class="probs-title"> PROBABILIDADES</div>
+    <div id="probsGrid"></div>
+  </div>
+
+  <div class="hist">
+    <div class="hist-hdr">
+      <span> HISTORIAL DE FALLAS</span>
+      <span id="histCnt">0</span>
+    </div>
+    <div class="hist-list" id="histList">
+      <div style="text-align:center;padding:2rem;color:var(--t3)">Sin fallas registradas</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// Configuración — cambiar IP si cambia la red
+// ============================================================
+const WS_URL = "ws://10.43.33.139:8080";
+
+const LABEL_NAMES = {
+  "bad_ignition":          "Falla de encendido",
+  "dead_battery":          "Batería descargada",
+  "low_oil":               "Aceite bajo",
+  "normal_brakes":         "Frenos normales",
+  "normal_engine_idle":    "Motor normal (ralentí)",
+  "normal_engine_startup": "Arranque normal",
+  "power_steering":        "Falla dirección asistida",
+  "serpentine_belt":       "Falla correa serpentina",
+  "worn_out_brakes":       "Frenos desgastados"
+};
+
+// ── Estado ────────────────────────────────────────────────────
+let socket       = null;
+let connected    = false;
+let faultHistory = [];
+let retryTimer   = null;
+
+// ── Helpers ───────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function formatTime(ts) {
+  return new Date(ts).toLocaleTimeString('es-MX',
+    { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function setConnected(on) {
+  connected = on;
+  document.getElementById('wsBtn').classList.toggle('on', on);
+  document.getElementById('wsDot').classList.toggle('on', on);
+  document.getElementById('wsText').textContent = on ? 'Conectado' : 'Conectar';
+  document.getElementById('connScreen').style.display = on ? 'none' : 'flex';
+  document.getElementById('dash').style.display       = on ? 'block' : 'none';
+}
+
+// ── WebSocket ─────────────────────────────────────────────────
+function toggleWS() {
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    clearTimeout(retryTimer);
+    socket.close();
+  } else {
+    connect();
+  }
+}
+
+function connect() {
+  document.getElementById('connUrl').textContent = WS_URL;
+  showToast('Conectando...');
+
+  try {
+    socket = new WebSocket(WS_URL);
+  } catch(e) {
+    showToast('URL inválida');
+    return;
+  }
+
+  socket.onopen = () => {
+    setConnected(true);
+    showToast('Conectado al modelo');
+  };
+
+  socket.onmessage = (event) => {
+    let data;
+    try { 
+      data = JSON.parse(event.data); 
+      console.log("📨 Datos recibidos:", data);
+    }
+    catch(e) { 
+      console.error('JSON inválido:', event.data); 
+      return; 
+    }
+
+    if (data.is_fault === true) {
+      showFault(data);
+    } else {
+      // Normal — limpiar alerta activa
+      document.getElementById('faultAlert').classList.remove('visible');
+      document.getElementById('probsCard').classList.remove('visible');
+      document.getElementById('statusText').textContent = '✓ Sistema normal — Monitoreando...';
+    }
+  };
+
+  socket.onclose = () => {
+    setConnected(false);
+    showToast('Desconectado — reintentando en 3s...');
+    retryTimer = setTimeout(connect, 3000);
+  };
+
+  socket.onerror = () => {
+    showToast('Error de conexión');
+  };
+}
+
+// ── Mostrar falla ─────────────────────────────────────────────
+function showFault(data) {
+  const label       = data.label || 'unknown';
+  const displayName = LABEL_NAMES[label] || label;
+  const now         = Date.now();
+
+  // Alerta principal
+  document.getElementById('faultAlert').classList.add('visible');
+  document.getElementById('faLabels').innerHTML = `
+    <div class="fa-lbl">
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0"></div>
+      <div class="fa-text">${displayName}</div>
+    </div>`;
+  document.getElementById('faTime').textContent = formatTime(now);
+  document.getElementById('statusText').textContent = '⚠ FALLA DETECTADA — Revisar diagnóstico';
+
+  // Vibrar en móvil
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+  showToast(`⚠ ${displayName}`);
+
+  // Agregar al historial (evitar duplicados consecutivos)
+  if (faultHistory.length === 0 || faultHistory[0].label !== label) {
+    faultHistory.unshift({ name: displayName, label, ts: now });
+    if (faultHistory.length > 50) faultHistory.pop();
+    renderHistory();
+  }
+  
+  // ============================================================
+  // MOSTRAR PROBABILIDADES con colores NARANJA/AMARILLO
+  // ============================================================
+  const probs = data.probabilities || {};
+  const entries = Object.entries(probs).sort((a, b) => b[1] - a[1]);
+  
+  if (entries.length > 0) {
+      const probsHtml = entries.map(([key, val]) => {
+          const pct   = Math.round(val * 100);
+          // COLOR NARANJA/AMARILLO para el texto
+          const textColor = pct > 50 ? '#ff9f00' : pct > 20 ? '#ffb347' : '#ffd000';
+          const name  = LABEL_NAMES[key] || key;
+          return `
+              <div class="p-row">
+                  <div class="p-name" title="${name}">${name}</div>
+                  <div class="p-track">
+                      <div class="p-fill" style="width:${pct}%"></div>
+                  </div>
+                  <div class="p-pct" style="color:${textColor}">${pct}%</div>
+              </div>`;
+      }).join('');
+
+      document.getElementById('probsGrid').innerHTML = probsHtml;
+      document.getElementById('probsCard').classList.add('visible');
+  } else {
+      document.getElementById('probsCard').classList.remove('visible');
+  }
+}
+
+// ── Historial ─────────────────────────────────────────────────
+function renderHistory() {
+  const container = document.getElementById('histList');
+  document.getElementById('histCnt').textContent = faultHistory.length;
+
+  if (faultHistory.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--t3)">Sin fallas registradas</div>';
+    return;
+  }
+
+  container.innerHTML = faultHistory.map(item => `
+    <div class="h-item">
+      <div class="h-dot"></div>
+      <div style="flex:1">
+        <div class="h-lbl">${item.name}</div>
+        <div class="h-time">${formatTime(item.ts)}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Init ──────────────────────────────────────────────────────
+document.getElementById('connUrl').textContent = WS_URL;
+connect();
+</script>
+</body>
+</html>
