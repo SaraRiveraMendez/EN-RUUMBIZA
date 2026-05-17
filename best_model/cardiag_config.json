@@ -1,0 +1,102 @@
+{
+  "label_names": [
+    "bad_ignition",
+    "dead_battery",
+    "low_oil",
+    "normal_brakes",
+    "normal_engine_idle",
+    "normal_engine_startup",
+    "power_steering",
+    "serpentine_belt",
+    "worn_out_brakes"
+  ],
+  "feature_names": [
+    "mfcc_0",
+    "mfcc_1",
+    "mfcc_2",
+    "mfcc_3",
+    "mfcc_4",
+    "mfcc_5",
+    "mfcc_6",
+    "mfcc_7",
+    "mfcc_8",
+    "mfcc_9",
+    "mfcc_10",
+    "mfcc_11",
+    "mfcc_12"
+  ],
+  "input_size": 13,
+  "num_labels": 9,
+  "task_type": "multi_label",
+  "training_strategy": "fault_only",
+  "state_names": [],
+  "state_allowed_labels": {
+    "startup": [
+      "normal_engine_startup",
+      "bad_ignition",
+      "dead_battery"
+    ],
+    "braking": [
+      "normal_brakes",
+      "worn_out_brakes"
+    ],
+    "idle": [
+      "normal_engine_idle",
+      "low_oil",
+      "power_steering",
+      "serpentine_belt"
+    ]
+  },
+  "state_loss_weight": 0.0,
+  "ignored_labels": [
+    "power_steering_combined_no_oil_serpentine_belt",
+    "power_steering_combined_serpentine_belt",
+    "no_oil_serpentine_belt",
+    "power_steering_combined_no_oil"
+  ],
+  "threshold": 0.7611110806465149,
+  "thresholds": [
+    0.75,
+    0.8500000238418579,
+    0.75,
+    0.75,
+    0.6499999761581421,
+    0.699999988079071,
+    0.75,
+    0.800000011920929,
+    0.8500000238418579
+  ],
+  "threshold_strategy": "per_class_validation_f1",
+  "feature_mean": [
+    -29.804152862859937,
+    0.8341633259332701,
+    -0.5495333612468919,
+    0.9297007446419113,
+    -0.3152731107924863,
+    0.9707276982379062,
+    -0.2732913821483377,
+    0.5553910501308911,
+    -0.4100067038795233,
+    0.4053608938257348,
+    -0.3110448573018307,
+    0.4034480769998784,
+    -0.26273617976791064
+  ],
+  "feature_scale": [
+    8.624352312063715,
+    2.4553336574207885,
+    1.612628342865456,
+    1.0378096236417815,
+    1.0501878464267822,
+    0.8127950891224404,
+    0.7910374276870475,
+    0.747550435402084,
+    0.6514946121999765,
+    0.5858370142866071,
+    0.5799494263276911,
+    0.5210160410982347,
+    0.5341649110142456
+  ],
+  "output": "probabilities",
+  "general_metric": "macro_f1"
+}
