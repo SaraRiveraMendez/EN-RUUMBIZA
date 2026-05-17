@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>EN-RUMBIZA - Monitor de Fallas</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06070c;--s1:#0d0f1a;--s2:#141620;--s3:#1c1f2e;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --green:#00ffaa;--green-bg:rgba(0,255,170,.05);
+  --red:#ff3d5a;--red-bg:rgba(255,61,90,.1);
+  --amber:#ffb830;
+  --text:#e8eaf0;--t2:#7a7f96;--t3:#3a3f56;
+  --mono:'IBM Plex Mono',monospace;
+  --disp:'Rajdhani',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--disp);max-width:450px;margin:0 auto;min-height:100vh}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:1rem;background:rgba(6,7,12,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);position:sticky;top:0}
+.logo{font-size:1.5rem;font-weight:700}.logo b{color:var(--green)}
+.ble-btn{display:flex;align-items:center;gap:.4rem;padding:.32rem .75rem;border-radius:999px;border:1px solid var(--border2);background:var(--s2);color:var(--t2);font-family:var(--mono);font-size:.62rem;cursor:pointer}
+.ble-btn.on{border-color:rgba(0,255,170,.4);background:var(--green-bg);color:var(--green)}
+.ble-dot{width:6px;height:6px;border-radius:50%;background:var(--t3)}
+.ble-dot.on{background:var(--green);box-shadow:0 0 8px rgba(0,255,170,.5);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+.conn-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;padding:2rem;text-align:center}
+.conn-orb{width:88px;height:88px;border-radius:50%;background:var(--s2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:2.2rem;margin-bottom:1.6rem}
+.btn-ble{display:flex;align-items:center;gap:.6rem;padding:.85rem 2.2rem;background:var(--green-bg);border:1px solid rgba(0,255,170,.35);border-radius:12px;color:var(--green);font-weight:700;cursor:pointer}
+#dash{display:none;padding:1rem}
+.fault-alert{display:none;margin-bottom:1rem;border-radius:16px;border:1px solid var(--red);background:var(--red-bg);padding:1.3rem;animation:slideIn .3s}
+.fault-alert.visible{display:block}
+@keyframes slideIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+.fa-badge{display:inline-flex;align-items:center;gap:.4rem;padding:.28rem .75rem;border-radius:999px;background:rgba(255,61,90,.2);border:1px solid var(--red);font-family:var(--mono);font-size:.63rem;color:var(--red);margin-bottom:.8rem}
+.fa-dot{width:6px;height:6px;border-radius:50%;background:var(--red);animation:blink 1s infinite}
+.fa-lbl{display:flex;align-items:center;gap:.65rem;padding:.5rem 0;border-bottom:1px solid rgba(255,61,90,.2)}
+.fa-text{font-size:1.1rem;font-weight:600;color:var(--red)}
+.fa-conf{display:flex;align-items:center;gap:.6rem;margin-top:.8rem;padding-top:.8rem;border-top:1px solid rgba(255,61,90,.2)}
+.fa-conf-track{flex:1;height:4px;background:rgba(255,61,90,.2);border-radius:999px;overflow:hidden}
+.fa-conf-fill{height:100%;background:var(--red);transition:width .3s}
+.fa-time{font-family:var(--mono);font-size:.6rem;color:var(--t3);margin-top:.8rem;text-align:right}
+.probs{background:var(--s1);border:1px solid var(--border);border-radius:13px;padding:1rem;margin-bottom:1rem}
+.probs-title{font-family:var(--mono);font-size:.6rem;color:var(--t3);margin-bottom:.8rem}
+.p-row{display:flex;align-items:center;gap:.6rem;padding:.28rem 0}
+.p-name{font-size:.72rem;color:var(--t2);width:140px}
+.p-track{flex:1;height:4px;background:var(--s3);border-radius:999px;overflow:hidden}
+.p-fill{height:100%;border-radius:999px}
+.p-pct{font-family:var(--mono);font-size:.65rem;min-width:35px;text-align:right}
+.hist{padding:.8rem 0 5rem}
+.hist-hdr{display:flex;justify-content:space-between;margin-bottom:.6rem;font-family:var(--mono);font-size:.6rem;color:var(--t3)}
+.hist-list{display:flex;flex-direction:column;gap:.4rem}
+.h-item{display:flex;align-items:center;gap:.65rem;padding:.7rem .9rem;background:var(--s1);border:1px solid var(--border);border-radius:10px;border-left:3px solid var(--red)}
+.h-dot{width:8px;height:8px;border-radius:50%;background:var(--red)}
+.h-lbl{font-size:.82rem;font-weight:600}
+.h-time{font-family:var(--mono);font-size:.58rem;color:var(--t3)}
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--border2);padding:.6rem 1.1rem;border-radius:9px;font-size:.76rem;transition:all .3s;opacity:0;z-index:1000}
+.toast.show{opacity:1}
+.status-text{text-align:center;padding:1rem;color:var(--t3);font-family:var(--mono);font-size:.7rem}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="logo">EN<b>RUUMBIZA</b></div>
+  <button class="ble-btn" id="bleBtn" onclick="toggleBle()">
+    <div class="ble-dot" id="bleDot"></div>
+    <span id="bleText">Conectar BLE</span>
+  </button>
+</div>
+
+<div class="conn-screen" id="connScreen">
+  <div class="conn-orb">📡</div>
+  <div class="conn-title" style="font-size:1.3rem">Esperando conexión</div>
+  <div class="conn-sub" style="color:var(--t2);margin:1rem 0">Conecta con la computadora que ejecuta el modelo de clasificación</div>
+  <button class="btn-ble" onclick="toggleBle()"><span>🔗</span> Conectar BLE</button>
+</div>
+
+<div id="dash">
+  <div class="status-text" id="statusText">⚡ Esperando datos... Solo se mostrarán fallas</div>
+  
+  <div class="fault-alert" id="faultAlert">
+    <div class="fa-badge"><div class="fa-dot"></div> FALLA DETECTADA</div>
+    <div class="fa-labels" id="faLabels"></div>
+    <div class="fa-conf" id="faConf">
+      <span class="fa-conf-lbl">Confianza</span>
+      <div class="fa-conf-track"><div class="fa-conf-fill" id="faFill"></div></div>
+      <span class="fa-conf-val" id="faVal"></span>
+    </div>
+    <div class="fa-time" id="faTime"></div>
+  </div>
+  
+  <div class="probs" id="probsCard" style="display:none">
+    <div class="probs-title"> PROBABILIDADES</div>
+    <div id="probsGrid"></div>
+  </div>
+  
+  <div class="hist">
+    <div class="hist-hdr">
+      <span> HISTORIAL DE FALLAS</span>
+      <span id="histCnt">0</span>
+    </div>
+    <div class="hist-list" id="histList">
+      <div style="text-align:center;padding:2rem;color:var(--t3)">Sin fallas registradas</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// UUIDs - DEBEN SER IGUALES A LOS DE LA COMPUTADORA A
+// ============================================================
+const SERVICE_UUID = "12345678-1234-1234-1234-123456789abc";
+const CHARACTERISTIC_UUID = "12345678-1234-1234-1234-123456789001";
+
+// Variables globales
+let device = null;
+let characteristic = null;
+let connected = false;
+let faultHistory = [];
+
+// Mapeo de labels a nombres legibles
+const LABEL_NAMES = {
+    "bad_ignition": "Falla de encendido",
+    "dead_battery": "Batería descargada",
+    "low_oil": "Aceite bajo",
+    "normal_brakes": "Frenos normales",
+    "normal_engine_idle": "Motor normal (ralentí)",
+    "normal_engine_startup": "Arranque normal",
+    "power_steering": "Falla dirección asistida",
+    "serpentine_belt": "Falla correa serpentina",
+    "worn_out_brakes": "Frenos desgastados"
+};
+
+// Helper: mostrar notificación
+function showToast(msg, type = 'info') {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast show';
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// Helper: formatear timestamp
+function formatTime(timestamp) {
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+// Actualizar UI del botón BLE
+function updateBleUI(connected) {
+    const btn = document.getElementById('bleBtn');
+    const dot = document.getElementById('bleDot');
+    const text = document.getElementById('bleText');
+    
+    if (connected) {
+        btn.classList.add('on');
+        dot.classList.add('on');
+        text.textContent = 'Conectado';
+    } else {
+        btn.classList.remove('on');
+        dot.classList.remove('on');
+        text.textContent = 'Conectar BLE';
+    }
+}
+
+// Mostrar la alerta de falla
+function showFaultAlert(data) {
+    const alertDiv = document.getElementById('faultAlert');
+    const labelsDiv = document.getElementById('faLabels');
+    const probsDiv = document.getElementById('probsGrid');
+    const probsCard = document.getElementById('probsCard');
+    
+    // Mostrar alerta
+    alertDiv.classList.add('visible');
+    
+    // Obtener el label y display name
+    const label = data.label || 'unknown';
+    const displayName = data.display_name || LABEL_NAMES[label] || label;
+    
+    // Mostrar el nombre de la falla
+    labelsDiv.innerHTML = `
+        <div class="fa-lbl">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--red)"></div>
+            <div class="fa-text">${displayName}</div>
+        </div>
+    `;
+    
+    // Mostrar confianza (probabilidad más alta)
+    const probs = data.probabilities || {};
+    const maxProb = Math.max(...Object.values(probs), 0);
+    const confidencePercent = Math.round(maxProb * 100);
+    
+    if (maxProb > 0) {
+        document.getElementById('faConf').style.display = 'flex';
+        document.getElementById('faFill').style.width = confidencePercent + '%';
+        document.getElementById('faVal').textContent = confidencePercent + '%';
+    }
+    
+    // Mostrar timestamp
+    document.getElementById('faTime').textContent = formatTime(data.timestamp || (Date.now()/1000));
+    
+    // Mostrar todas las probabilidades
+    const entries = Object.entries(probs).sort((a, b) => b[1] - a[1]);
+    if (entries.length > 0) {
+        probsCard.style.display = 'block';
+        probsDiv.innerHTML = entries.map(([key, val], i) => {
+            const pct = Math.round(val * 100);
+            const color = val > 0.6 ? 'var(--red)' : val > 0.3 ? 'var(--amber)' : 'var(--t3)';
+            const labelName = LABEL_NAMES[key] || key;
+            return `
+                <div class="p-row">
+                    <div style="font-family:var(--mono);font-size:.6rem;width:20px">${i+1}</div>
+                    <div class="p-name">${labelName}</div>
+                    <div class="p-track"><div class="p-fill" style="width:${pct}%;background:${color}"></div></div>
+                    <div class="p-pct" style="color:${color}">${pct}%</div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    // Actualizar estado
+    document.getElementById('statusText').innerHTML = 'FALLA DETECTADA - Revisar diagnóstico';
+}
+
+// Agregar al historial
+function addToHistory(data) {
+    const displayName = data.display_name || LABEL_NAMES[data.label] || data.label;
+    
+    faultHistory.unshift({
+        name: displayName,
+        timestamp: data.timestamp || (Date.now()/1000),
+        label: data.label
+    });
+    
+    if (faultHistory.length > 50) faultHistory.pop();
+    updateHistoryUI();
+}
+
+// Actualizar historial en UI
+function updateHistoryUI() {
+    const container = document.getElementById('histList');
+    const counter = document.getElementById('histCnt');
+    
+    counter.textContent = faultHistory.length;
+    
+    if (faultHistory.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--t3)">Sin fallas registradas</div>';
+        return;
+    }
+    
+    container.innerHTML = faultHistory.map(item => `
+        <div class="h-item">
+            <div class="h-dot"></div>
+            <div style="flex:1">
+                <div class="h-lbl">${item.name}</div>
+                <div class="h-time">${formatTime(item.timestamp)}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ============================================================
+// FUNCIÓN PRINCIPAL: Recibe datos de la Computadora A
+// ============================================================
+function onDataReceived(event) {
+    try {
+        const decoder = new TextDecoder();
+        const jsonString = decoder.decode(event.target.value.buffer);
+        const data = JSON.parse(jsonString);
+        
+        console.log("Datos recibidos:", data);
+        
+        // Verificar si es una FALLA (el campo que mande la Computadora A)
+        const isFault = data.is_fault === true || data.fault === 1 || data.fault === true;
+        
+        if (isFault) {
+            // ES FALLA - Mostrar alerta
+            showFaultAlert(data);
+            addToHistory(data);
+            
+            // Vibrar si es móvil
+            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            
+            showToast(`${data.display_name || 'Falla'} detectada`, 'error');
+        } else {
+            // NO ES FALLA - No hacer NADA (pantalla queda como está)
+            console.log("Estado normal - no se muestra nada");
+            document.getElementById('statusText').innerHTML = 'Sistema normal - Monitoreando...';
+        }
+        
+    } catch (error) {
+        console.error("Error procesando datos:", error);
+    }
+}
+
+// ============================================================
+// CONEXIÓN BLE
+const WS_URL = "ws://10.43.33.139:8080";
+let socket = null;
+let connected = false;
+let faultHistory = [];
+
+const LABEL_NAMES = {
+    "bad_ignition": "Falla de encendido",
+    "dead_battery": "Batería descargada",
+    "low_oil": "Aceite bajo",
+    "normal_brakes": "Frenos normales",
+    "normal_engine_idle": "Motor normal (ralentí)",
+    "normal_engine_startup": "Arranque normal",
+    "power_steering": "Falla dirección asistida",
+    "serpentine_belt": "Falla correa serpentina",
+    "worn_out_brakes": "Frenos desgastados"
+};
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show';
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function formatTime(ts) {
+    return new Date(ts * 1000).toLocaleTimeString('es-MX', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function updateBleUI(on) {
+    const btn = document.getElementById('bleBtn');
+    const dot = document.getElementById('bleDot');
+    const text = document.getElementById('bleText');
+    btn.classList.toggle('on', on);
+    dot.classList.toggle('on', on);
+    text.textContent = on ? 'Conectado' : 'Conectar';
+}
+
+function toggleBle() {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.close();
+    } else {
+        connectWS();
+    }
+}
+
+function connectWS() {
+    showToast('Conectando...');
+    socket = new WebSocket(WS_URL);
+
+    socket.onopen = () => {
+        connected = true;
+        updateBleUI(true);
+        document.getElementById('connScreen').style.display = 'none';
+        document.getElementById('dash').style.display = 'block';
+        showToast('Conectado al modelo');
+    };
+
+    socket.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            if (data.is_fault) {
+                showFaultAlert(data);
+                addToHistory(data);
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                showToast('Falla detectada');
+            } else {
+                document.getElementById('statusText').innerHTML = 'Sistema normal - Monitoreando...';
+                document.getElementById('faultAlert').classList.remove('visible');
+            }
+        } catch(e) { console.error(e); }
+    };
+
+    socket.onclose = () => {
+        connected = false;
+        updateBleUI(false);
+        document.getElementById('connScreen').style.display = 'flex';
+        document.getElementById('dash').style.display = 'none';
+        showToast('Desconectado - reintentando...');
+        setTimeout(connectWS, 3000);
+    };
+
+    socket.onerror = () => showToast('Error de conexión');
+}
+
+function showFaultAlert(data) {
+    const label = data.label || 'unknown';
+    const displayName = LABEL_NAMES[label] || label;
+    document.getElementById('faultAlert').classList.add('visible');
+    document.getElementById('faLabels').innerHTML = `
+        <div class="fa-lbl">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--red)"></div>
+            <div class="fa-text">${displayName}</div>
+        </div>`;
+    document.getElementById('faConf').style.display = 'none';
+    document.getElementById('faTime').textContent = formatTime(Date.now() / 1000);
+    document.getElementById('statusText').innerHTML = 'FALLA DETECTADA - Revisar diagnóstico';
+}
+
+function addToHistory(data) {
+    const displayName = LABEL_NAMES[data.label] || data.label;
+    faultHistory.unshift({ name: displayName, timestamp: Date.now() / 1000, label: data.label });
+    if (faultHistory.length > 50) faultHistory.pop();
+    updateHistoryUI();
+}
+
+function updateHistoryUI() {
+    const container = document.getElementById('histList');
+    document.getElementById('histCnt').textContent = faultHistory.length;
+    if (faultHistory.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--t3)">Sin fallas registradas</div>';
+        return;
+    }
+    container.innerHTML = faultHistory.map(item => `
+        <div class="h-item">
+            <div class="h-dot"></div>
+            <div style="flex:1">
+                <div class="h-lbl">${item.name}</div>
+                <div class="h-time">${formatTime(item.timestamp)}</div>
+            </div>
+        </div>`).join('');
+}
+
+// Conectar automáticamente al cargar
+connectWS();
+updateBleUI(false);
+
+</script>
+</body>
+</html>
