@@ -212,6 +212,3 @@ El proyecto está diseñado con una arquitectura multi-capas:
 - Los archivos `.exe` y `.dll` en `car_engine_cpp/` son binarios compilados de inferencia rápida.
 - El notebook `car_engine_cpp/pc/MFCC.ipynb` proporciona análisis interactivo de características.
 
-## Contacto
-
-Proyecto desarrollado para Guadalahacks 2026 como herramienta de detección temprana de fallas en motores de automóvil.
